@@ -74,6 +74,14 @@
 
   .logo-text span { color: var(--accent); }
 
+  .logo-sub {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   /* AI Quick Links */
   .ai-links {
     padding: 14px 14px 10px;
@@ -609,6 +617,21 @@
     font-size: 10px;
   }
 
+  .launch-hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+  .ai-launch-btn.launching {
+    border-color: var(--accent3) !important;
+    color: var(--accent3) !important;
+    background: #6dffd215 !important;
+  }
+
+  .modal-ai-note {
+    font-size: 11px; color: var(--text-muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
   /* Form modal */
   .form-group { display: flex; flex-direction: column; gap: 6px; }
 
@@ -712,7 +735,10 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">⚡</div>
-    <span class="logo-text">Prompt<span>Vault</span></span>
+    <div>
+      <span class="logo-text">Prompt<span>Vault</span></span>
+      <div class="logo-sub">by tbinh with Claude</div>
+    </div>
   </div>
 
   <!-- AI Quick Launch -->
@@ -779,8 +805,11 @@
         </div>
       </div>
       <div>
-        <div class="modal-section-label">🤖 Dùng với AI nào</div>
+        <div class="modal-section-label">🤖 Mở AI &amp; dùng ngay</div>
         <div class="modal-ai-row" id="vm-ai-row"></div>
+        <div class="modal-ai-note" style="margin-top:8px">
+          💡 Click vào AI bất kỳ → <strong style="color:var(--accent3)">prompt tự copy</strong> → mở tab mới → dán <kbd style="background:#ffffff15;padding:1px 6px;border-radius:4px;font-family:monospace">Ctrl+V</kbd> vào chat là xong!
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1146,13 +1175,36 @@ function viewPrompt(id) {
   // AI launch
   const row = document.getElementById('vm-ai-row');
   row.innerHTML = AI_PLATFORMS.map(ai => `
-    <a class="ai-launch-btn" href="${ai.url}" target="_blank">
+    <button class="ai-launch-btn" onclick="launchAI('${ai.url}', this)">
       <span class="dot" style="background:${ai.bg}22">${ai.icon}</span>
       ${ai.name}
-    </a>
+      <span class="launch-hint">↗</span>
+    </button>
   `).join('');
 
   openOverlay('viewOverlay');
+}
+
+function launchAI(url, btn) {
+  const p = state.prompts.find(x => x.id === state.viewingId);
+  if (!p) return;
+  // Copy prompt to clipboard
+  navigator.clipboard.writeText(p.prompt).then(() => {
+    // Visual feedback on button
+    btn.classList.add('launching');
+    btn.querySelector('.launch-hint').textContent = '✓';
+    setTimeout(() => {
+      btn.classList.remove('launching');
+      btn.querySelector('.launch-hint').textContent = '↗';
+    }, 2000);
+    // Open AI site
+    window.open(url, '_blank');
+    toast('✅ Đã copy prompt! Dán Ctrl+V vào chat nhé 🚀');
+  }).catch(() => {
+    // Fallback: open anyway
+    window.open(url, '_blank');
+    toast('⚠️ Không copy được — hãy copy thủ công rồi dán vào AI');
+  });
 }
 
 function copyPrompt() {
